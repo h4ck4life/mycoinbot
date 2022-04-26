@@ -4,6 +4,7 @@ import com.filavents.mycoinbot.model.Crypto;
 import com.filavents.mycoinbot.service.CryptoService;
 import com.filavents.mycoinbot.service.impl.LunoCryptoServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,8 +20,7 @@ public class CryptoController {
 
     @RequestMapping(value = "/latest", method = RequestMethod.GET)
     public ResponseEntity<Crypto> getLatestCryptoPrice() {
-        Crypto latestPrice = cryptoService.getLatestCryptoPrice("BTC");
-        System.out.println(latestPrice.toString());
-        return null;
+        Crypto crypto = cryptoService.getLatestCryptoPrice("BTC");
+        return new ResponseEntity<>(crypto, HttpStatus.OK);
     }
 }
