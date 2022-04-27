@@ -20,11 +20,11 @@ public class LunoCryptoServiceImpl implements CryptoService {
     private final WebClient webClient = WebClient.create();
 
     @Override
-    public Crypto getLatestCryptoPrice(String currencyCode) {
+    public Crypto getLatestCryptoPrice(String currencyCode, String lunoUrl) {
 
         Optional<LunoDto> lunoDto = Optional.ofNullable(
                 this.webClient.get()
-                        .uri("https://ajax.luno.com/ajax/1/display_ticker")
+                        .uri(lunoUrl)
                         .retrieve()
                         .bodyToMono(LunoDto.class)
                         .block()
@@ -33,7 +33,17 @@ public class LunoCryptoServiceImpl implements CryptoService {
         Crypto crypto = new Crypto();
         crypto.setName("BTC");
         lunoDto.ifPresentOrElse(
-                lunoDto1 -> crypto.setPrice(new BigDecimal(lunoDto1.getBtc_price())),
+                lunoDto1 -> {
+                    if (lunoDto1.getBtc_price() != null) {
+                        crypto.setPrice(new BigDecimal(
+                                lunoDto1.getBtc_price()
+                                        .split(" ")[1]
+                                        .replace(",", "")
+                        ));
+                    } else {
+                        crypto.setPrice(new BigDecimal(0));
+                    }
+                },
                 () -> crypto.setPrice(BigDecimal.ZERO)
         );
 
