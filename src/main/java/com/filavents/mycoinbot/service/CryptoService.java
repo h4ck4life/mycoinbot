@@ -4,5 +4,5 @@ import com.filavents.mycoinbot.model.Crypto;
 
 public interface CryptoService {
 
-    Crypto getLatestCryptoPrice(String currencyCode, String lunoUrl);
+    Crypto getLatestCryptoPrice(String currencyCode, String lunoUrl) throws Exception;
 }

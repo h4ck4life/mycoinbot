@@ -57,7 +57,7 @@ class LunoCryptoServiceImplTest {
     }
 
     @Test
-    void givenLunoResponse_whenNotEmpty_thenReturnFormattedPrice() throws JsonProcessingException {
+    void givenLunoResponse_whenNotEmpty_thenReturnFormattedPrice() throws Exception {
 
         // Mock the Luno API response
         Map<String, String> mockResponse = new HashMap<>();
@@ -74,7 +74,7 @@ class LunoCryptoServiceImplTest {
     }
 
     @Test
-    void givenLunoResponse_whenJSONKeyMissing_thenReturnZeroPrice() throws JsonProcessingException {
+    void givenLunoResponse_whenJSONKeyMissing_thenReturnZeroPrice() throws Exception {
 
         // Mock the Luno API response
         Map<String, String> mockResponse = new HashMap<>();

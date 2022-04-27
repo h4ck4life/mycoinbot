@@ -7,6 +7,7 @@ import com.filavents.mycoinbot.service.CryptoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -20,7 +21,7 @@ public class LunoCryptoServiceImpl implements CryptoService {
     private final WebClient webClient = WebClient.create();
 
     @Override
-    public Crypto getLatestCryptoPrice(String currencyCode, String lunoUrl) {
+    public Crypto getLatestCryptoPrice(String currencyCode, String lunoUrl) throws Exception {
 
         Optional<LunoDto> lunoDto = Optional.ofNullable(
                 this.webClient.get()
