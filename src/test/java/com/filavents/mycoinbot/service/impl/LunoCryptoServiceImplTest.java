@@ -1,6 +1,5 @@
 package com.filavents.mycoinbot.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.filavents.mycoinbot.model.Crypto;
 import com.filavents.mycoinbot.model.repository.CryptoRepository;
