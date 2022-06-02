@@ -2,12 +2,17 @@ package com.filavents.mycoinbot.model;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 
 @Entity
 @Table(name = "alert", indexes = {
         @Index(name = "idx_price_alert", columnList = "chatId, isAlerted")
 })
 public class Alert {
+
+    public Alert() {
+        this.createdDate = new Timestamp(System.currentTimeMillis());
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -27,6 +32,9 @@ public class Alert {
     @Column(nullable = false)
     private boolean isAlerted;
 
+    @Column(updatable = false)
+    private final Timestamp createdDate;
+
     public Long getId() {
         return id;
     }
@@ -37,6 +45,10 @@ public class Alert {
 
     public String getChatId() {
         return chatId;
+    }
+
+    public Timestamp getCreatedDate() {
+        return createdDate;
     }
 
     public void setChatId(String chatId) {
