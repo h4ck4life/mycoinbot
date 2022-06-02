@@ -45,11 +45,14 @@ public class TelegramBot implements ApplicationRunner {
                                     "BTC",
                                     lunoEndpointUrl
                             );
-                            String currentPrice = "Luno - " + formatCurrency(crypto.getPrice().doubleValue());
+                            String currentPrice = "1 BTC - " + formatCurrency(crypto.getPrice().doubleValue());
                             replyMessage(chatId, currentPrice);
                             break;
                         case "/alert":
                             replyMessage(chatId, "New price alert saved.");
+                            break;
+                        case "/list":
+                            replyMessage(chatId, "Active alerts:\n> 132000\n< 125000");
                             break;
                         case "/help":
                             replyMessage(chatId, "Please contact @h4ck4life for further support. Thanks.");
