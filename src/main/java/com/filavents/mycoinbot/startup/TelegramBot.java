@@ -49,8 +49,10 @@ public class TelegramBot implements ApplicationRunner {
                             replyMessage(chatId, currentPrice);
                             break;
                         case "/alert":
+                            replyMessage(chatId, "New price alert saved.");
                             break;
                         case "/help":
+                            replyMessage(chatId, "Please contact @h4ck4life for further support. Thanks.");
                             break;
                         default:
                     }
