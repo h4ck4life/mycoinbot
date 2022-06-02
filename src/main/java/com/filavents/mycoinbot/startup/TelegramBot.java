@@ -37,8 +37,8 @@ public class TelegramBot implements ApplicationRunner {
         // Register for updates
         bot.setUpdatesListener(updates -> {
             updates.forEach(update -> {
+                long chatId = update.message().chat().id();
                 try {
-                    long chatId = update.message().chat().id();
                     switch (update.message().text()) {
                         case "/price":
                             Crypto crypto = cryptoService.getLatestCryptoPrice(
@@ -47,10 +47,15 @@ public class TelegramBot implements ApplicationRunner {
                             );
                             String currentPrice = "Luno - " + formatCurrency(crypto.getPrice().doubleValue());
                             replyMessage(chatId, currentPrice);
-                        default:
                             break;
+                        case "/alert":
+                            break;
+                        case "/help":
+                            break;
+                        default:
                     }
                 } catch (Exception ex) {
+                    replyMessage(chatId, "Please try again later.");
                     ex.printStackTrace();
                 }
             });
