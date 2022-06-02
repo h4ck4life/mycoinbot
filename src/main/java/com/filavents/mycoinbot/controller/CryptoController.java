@@ -30,4 +30,10 @@ public class CryptoController {
         return new ResponseEntity<>(crypto, HttpStatus.OK);
     }
 
+    @RequestMapping(value = "/alert", method = RequestMethod.GET)
+    public ResponseEntity<String> checkPriceAlert() {
+
+        return new ResponseEntity<>("OK", HttpStatus.OK);
+    }
+
 }
