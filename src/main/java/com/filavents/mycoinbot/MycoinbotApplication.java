@@ -22,7 +22,7 @@ public class MycoinbotApplication {
             updates.forEach(update -> {
                 System.out.println(update.message());
                 long chatId = update.message().chat().id();
-                SendResponse response = bot.execute(new SendMessage(chatId, "Hello! " + update.message().from().firstName()));
+                SendResponse response = bot.execute(new SendMessage(chatId, "Hi! " + update.message().from().firstName()));
             });
             // return id of last processed update or confirm them all
             return UpdatesListener.CONFIRMED_UPDATES_ALL;
