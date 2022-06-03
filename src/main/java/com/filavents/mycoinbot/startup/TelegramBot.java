@@ -88,7 +88,7 @@ public class TelegramBot implements ApplicationRunner {
             StringBuilder sb = new StringBuilder();
             sb.append("Active alerts:\n");
             activeAlerts.stream().forEach(alert -> {
-                sb.append(alert.getTriggerCondition() + " " + formatCurrency(alert.getPrice().doubleValue()) + "\n");
+                sb.append("[" + alert.getId() + "] " + alert.getTriggerCondition() + " " + formatCurrency(alert.getPrice().doubleValue()) + "\n");
             });
             replyMessage(chatId, sb.toString());
         } else {
