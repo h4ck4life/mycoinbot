@@ -1,6 +1,7 @@
 package com.filavents.mycoinbot.startup;
 
 import com.filavents.mycoinbot.model.Crypto;
+import com.filavents.mycoinbot.model.repository.AlertRepository;
 import com.filavents.mycoinbot.service.CryptoService;
 import com.filavents.mycoinbot.service.impl.LunoCryptoServiceImpl;
 import com.pengrad.telegrambot.UpdatesListener;
@@ -13,6 +14,9 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 @Component
@@ -22,9 +26,17 @@ public class TelegramBot implements ApplicationRunner {
     private String lunoEndpointUrl;
 
     @Autowired
+    private AlertRepository alertRepository;
+
+    @Autowired
     private final CryptoService cryptoService = new LunoCryptoServiceImpl();
 
     private com.pengrad.telegrambot.TelegramBot bot = null;
+
+    public final String CMD_PRICE = "/price";
+    public final String CMD_ALERT = "/alert";
+    public final String CMD_LIST = "/list";
+    public final String CMD_HELP = "/help";
 
     @Override
     public void run(ApplicationArguments args) {
@@ -39,8 +51,9 @@ public class TelegramBot implements ApplicationRunner {
             updates.forEach(update -> {
                 long chatId = update.message().chat().id();
                 try {
+
                     switch (update.message().text()) {
-                        case "/price":
+                        case CMD_PRICE:
                             Crypto crypto = cryptoService.getLatestCryptoPrice(
                                     "BTC",
                                     lunoEndpointUrl
@@ -48,13 +61,13 @@ public class TelegramBot implements ApplicationRunner {
                             String currentPrice = "1 BTC - " + formatCurrency(crypto.getPrice().doubleValue());
                             replyMessage(chatId, currentPrice);
                             break;
-                        case "/alert":
+                        case CMD_ALERT:
                             replyMessage(chatId, "New price alert saved.");
                             break;
-                        case "/list":
+                        case CMD_LIST:
                             replyMessage(chatId, "Active alerts:\n> 132000\n< 125000");
                             break;
-                        case "/help":
+                        case CMD_HELP:
                             replyMessage(chatId, "Please contact @h4ck4life for further support. Thanks.");
                             break;
                         default:
@@ -69,9 +82,22 @@ public class TelegramBot implements ApplicationRunner {
         });
     }
 
-    private String formatCurrency(double price) {
+    public String formatCurrency(double price) {
         NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("ms", "MY"));
         return currency.format(price);
+    }
+
+    public String[] extractUserCommand(String message) {
+        return Arrays.stream(message.split(" ")).limit(2).toArray(String[]::new);
+    }
+
+    public String[] extractPriceAlertCommand(String message) {
+        return Arrays.stream(message.split(" ")).limit(2).toArray(String[]::new);
+    }
+
+    public boolean isWhiteListedPriceAlertCommand(String priceAlertCommand) {
+        String[] whitelist = {"<", ">"};
+        return Arrays.stream(whitelist).anyMatch(s -> s.equals(priceAlertCommand));
     }
 
     private void replyMessage(long chatId, String message) {
