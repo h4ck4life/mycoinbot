@@ -57,28 +57,13 @@ public class TelegramBot implements ApplicationRunner {
                     String[] userInputCommand = extractUserCommand(update.message().text());
                     switch (userInputCommand[0]) {
                         case CMD_PRICE:
-                            Crypto crypto = cryptoService.getLatestCryptoPrice(
-                                    "BTC",
-                                    lunoEndpointUrl
-                            );
-                            String currentPrice = "1 BTC - " + formatCurrency(crypto.getPrice().doubleValue());
-                            replyMessage(chatId, currentPrice);
+                            replyLatestBTCMYRPrice(chatId);
                             break;
                         case CMD_ALERT:
                             saveNewPriceAlert(userInputCommand[1], chatId);
                             break;
                         case CMD_LIST:
-                            List<Alert> activeAlerts = alertRepository.findAllActiveAlerts(chatId);
-                            if(activeAlerts.size() > 0) {
-                                StringBuilder sb = new StringBuilder();
-                                sb.append("Active alerts:\n");
-                                activeAlerts.stream().forEach(alert -> {
-                                    sb.append(alert.getTriggerCondition() + " " + formatCurrency(alert.getPrice().doubleValue()) + "\n");
-                                });
-                                replyMessage(chatId, sb.toString());
-                            } else {
-                                replyMessage(chatId, "No active alerts");
-                            }
+                            replyActiveAlertList(chatId);
                             break;
                         case CMD_HELP:
                             replyMessage(chatId, "Please contact @h4ck4life for further support. Thanks");
@@ -95,6 +80,29 @@ public class TelegramBot implements ApplicationRunner {
             // return id of last processed update or confirm them all
             return UpdatesListener.CONFIRMED_UPDATES_ALL;
         });
+    }
+
+    private void replyActiveAlertList(long chatId) {
+        List<Alert> activeAlerts = alertRepository.findAllActiveAlerts(chatId);
+        if(activeAlerts.size() > 0) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Active alerts:\n");
+            activeAlerts.stream().forEach(alert -> {
+                sb.append(alert.getTriggerCondition() + " " + formatCurrency(alert.getPrice().doubleValue()) + "\n");
+            });
+            replyMessage(chatId, sb.toString());
+        } else {
+            replyMessage(chatId, "No active alerts");
+        }
+    }
+
+    private void replyLatestBTCMYRPrice(long chatId) throws Exception {
+        Crypto crypto = cryptoService.getLatestCryptoPrice(
+                "BTC",
+                lunoEndpointUrl
+        );
+        String currentPrice = "1 BTC - " + formatCurrency(crypto.getPrice().doubleValue());
+        replyMessage(chatId, currentPrice);
     }
 
     private void saveNewPriceAlert(String priceCommand, long chatId) {
@@ -123,11 +131,9 @@ public class TelegramBot implements ApplicationRunner {
                     replyMessage(chatId, "Similar alert already exist");
 
                 }
-
             } else {
                 replyMessage(chatId, "Supported price alert operations are only `<` and `>`");
             }
-
         } else {
             replyMessage(chatId, "Please use valid price alert command (> 139500)");
         }
