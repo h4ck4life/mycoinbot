@@ -1,12 +1,11 @@
 package com.filavents.mycoinbot.startup;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TelegramBotTest {
 
@@ -40,8 +39,8 @@ class TelegramBotTest {
             "> :1",
             ">:1"
     }, delimiter = ':')
-    void extractPriceAlertCommand(String input, int expected) {
-        assertEquals(expected, bot.extractUserCommand(input).length);
+    void extractPriceAlertCommand_shouldReturn_stringArrays(String input, int expected) {
+        assertEquals(expected, bot.extractPriceAlertCommand(input).length);
     }
 
     @ParameterizedTest
