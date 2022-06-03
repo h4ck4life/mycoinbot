@@ -1,5 +1,6 @@
 package com.filavents.mycoinbot.startup;
 
+import com.filavents.mycoinbot.model.Alert;
 import com.filavents.mycoinbot.model.Crypto;
 import com.filavents.mycoinbot.model.repository.AlertRepository;
 import com.filavents.mycoinbot.service.CryptoService;
@@ -12,10 +13,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+import org.yaml.snakeyaml.util.ArrayUtils;
 
+import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -31,7 +34,7 @@ public class TelegramBot implements ApplicationRunner {
     @Autowired
     private final CryptoService cryptoService = new LunoCryptoServiceImpl();
 
-    private com.pengrad.telegrambot.TelegramBot bot = null;
+    private static com.pengrad.telegrambot.TelegramBot bot = null;
 
     public final String CMD_PRICE = "/price";
     public final String CMD_ALERT = "/alert";
@@ -51,8 +54,8 @@ public class TelegramBot implements ApplicationRunner {
             updates.forEach(update -> {
                 long chatId = update.message().chat().id();
                 try {
-
-                    switch (update.message().text()) {
+                    String[] userInputCommand = extractUserCommand(update.message().text());
+                    switch (userInputCommand[0]) {
                         case CMD_PRICE:
                             Crypto crypto = cryptoService.getLatestCryptoPrice(
                                     "BTC",
@@ -62,18 +65,30 @@ public class TelegramBot implements ApplicationRunner {
                             replyMessage(chatId, currentPrice);
                             break;
                         case CMD_ALERT:
-                            replyMessage(chatId, "New price alert saved.");
+                            saveNewPriceAlert(userInputCommand[1], chatId);
                             break;
                         case CMD_LIST:
-                            replyMessage(chatId, "Active alerts:\n> 132000\n< 125000");
+                            List<Alert> activeAlerts = alertRepository.findAllActiveAlerts(chatId);
+                            if(activeAlerts.size() > 0) {
+                                StringBuilder sb = new StringBuilder();
+                                sb.append("Active alerts:\n");
+                                activeAlerts.stream().forEach(alert -> {
+                                    sb.append(alert.getTriggerCondition() + " " + formatCurrency(alert.getPrice().doubleValue()) + "\n");
+                                });
+                                replyMessage(chatId, sb.toString());
+                            } else {
+                                replyMessage(chatId, "No active alerts");
+                            }
                             break;
                         case CMD_HELP:
-                            replyMessage(chatId, "Please contact @h4ck4life for further support. Thanks.");
+                            replyMessage(chatId, "Please contact @h4ck4life for further support. Thanks");
                             break;
                         default:
+                            replyMessage(chatId, "Please use correct command");
+                            break;
                     }
                 } catch (Exception ex) {
-                    replyMessage(chatId, "Please try again later.");
+                    replyMessage(chatId, "Please use correct command or try again later");
                     ex.printStackTrace();
                 }
             });
@@ -82,13 +97,56 @@ public class TelegramBot implements ApplicationRunner {
         });
     }
 
+    private void saveNewPriceAlert(String priceCommand, long chatId) {
+        if (null != priceCommand) {
+            String[] priceArgs = extractPriceAlertCommand(priceCommand);
+
+            // Destruct the price command
+            String priceAlertOperation = priceArgs[0];
+            String priceAlertAmount = priceArgs[1];
+
+            if (isWhiteListedPriceAlertCommand(priceAlertOperation)) {
+
+                BigDecimal price = new BigDecimal(priceAlertAmount);
+
+                if(alertRepository.findDuplicateActiveAlerts(chatId, price, priceAlertOperation).isEmpty()) {
+                    Alert alert = new Alert();
+                    alert.setAlerted(false);
+                    alert.setPrice(price);
+                    alert.setChatId(chatId);
+                    alert.setTriggerCondition(priceAlertOperation);
+                    alertRepository.save(alert);
+
+                    replyMessage(chatId, "New price alert saved");
+
+                } else {
+                    replyMessage(chatId, "Similar alert already exist");
+
+                }
+
+            } else {
+                replyMessage(chatId, "Supported price alert operations are only `<` and `>`");
+            }
+
+        } else {
+            replyMessage(chatId, "Please use valid price alert command (> 139500)");
+        }
+    }
+
     public String formatCurrency(double price) {
         NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("ms", "MY"));
         return currency.format(price);
     }
 
     public String[] extractUserCommand(String message) {
-        return Arrays.stream(message.split(" ")).limit(2).toArray(String[]::new);
+        int maxArray = 3;
+        String[] splitArgs = Arrays.stream(message.split(" ")).limit(maxArray).toArray(String[]::new);
+
+        if(splitArgs.length == 3) {
+            return List.of(splitArgs[0], splitArgs[1] + " " + splitArgs[2]).toArray(String[]::new);
+        } else {
+            return splitArgs;
+        }
     }
 
     public String[] extractPriceAlertCommand(String message) {
@@ -96,11 +154,11 @@ public class TelegramBot implements ApplicationRunner {
     }
 
     public boolean isWhiteListedPriceAlertCommand(String priceAlertCommand) {
-        String[] whitelist = {"<", ">"};
-        return Arrays.stream(whitelist).anyMatch(s -> s.equals(priceAlertCommand));
+        String[] whitelistedOperation = {"<", ">"};
+        return Arrays.stream(whitelistedOperation).anyMatch(s -> s.equals(priceAlertCommand));
     }
 
-    private void replyMessage(long chatId, String message) {
+    public static void replyMessage(long chatId, String message) {
         SendResponse response = bot.execute(
                 new SendMessage(chatId, message)
         );

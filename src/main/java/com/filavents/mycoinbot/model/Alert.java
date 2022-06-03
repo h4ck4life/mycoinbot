@@ -21,7 +21,7 @@ public class Alert {
     private Long id;
 
     @Column(nullable = false)
-    private String chatId;
+    private long chatId;
 
     @Column(nullable = false)
     private BigDecimal price;
@@ -43,7 +43,7 @@ public class Alert {
         this.id = id;
     }
 
-    public String getChatId() {
+    public long getChatId() {
         return chatId;
     }
 
@@ -51,7 +51,7 @@ public class Alert {
         return createdDate;
     }
 
-    public void setChatId(String chatId) {
+    public void setChatId(long chatId) {
         this.chatId = chatId;
     }
 
