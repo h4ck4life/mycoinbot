@@ -171,8 +171,7 @@ public class TelegramBot implements ApplicationRunner {
     public void sendAlert(Crypto crypto, Alert alert) {
         StringBuilder sb = new StringBuilder();
         sb.append("\uD83D\uDEA8 New alert:\n");
-        sb.append("Alert price " + formatCurrency(alert.getPrice().doubleValue()) + "\n");
-        sb.append(alert.getTriggerCondition() + " 1 BTC ≈ " + formatCurrency(crypto.getPrice().doubleValue()));
+        sb.append("1 BTC ≈ " + formatCurrency(crypto.getPrice().doubleValue()) + " " + alert.getTriggerCondition() + " " + formatCurrency(alert.getPrice().doubleValue()));
 
         replyMessage(alert.getChatId(), sb.toString());
 
