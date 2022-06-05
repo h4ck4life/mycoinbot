@@ -11,7 +11,10 @@ import java.util.List;
 @Repository
 public interface AlertRepository extends JpaRepository<Alert, Long> {
     @Query("select c from Alert c where c.isAlerted = false and c.chatId = ?1")
-    List<Alert> findAllActiveAlerts(long id);
+    List<Alert> findAllActiveAlertsByChatId(long id);
+
+    @Query("select c from Alert c where c.isAlerted = false")
+    List<Alert> findAllActiveAlerts();
 
     @Query("select c from Alert c where c.isAlerted = false and c.chatId = ?1 and c.price = ?2 and c.triggerCondition = ?3")
     List<Alert> findDuplicateActiveAlerts(long id, BigDecimal price, String triggerCondition);

@@ -13,12 +13,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
-import org.yaml.snakeyaml.util.ArrayUtils;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -34,7 +32,7 @@ public class TelegramBot implements ApplicationRunner {
     @Autowired
     private final CryptoService cryptoService = new LunoCryptoServiceImpl();
 
-    private static com.pengrad.telegrambot.TelegramBot bot = null;
+    private com.pengrad.telegrambot.TelegramBot bot = null;
 
     public final String CMD_PRICE = "/price";
     public final String CMD_ALERT = "/alert";
@@ -66,14 +64,14 @@ public class TelegramBot implements ApplicationRunner {
                             replyActiveAlertList(chatId);
                             break;
                         case CMD_HELP:
-                            replyMessage(chatId, "Please contact @h4ck4life for further support. Thanks");
+                            replyMessage(chatId, "ℹ️ Please contact @h4ck4life for further support. Thanks");
                             break;
                         default:
-                            replyMessage(chatId, "Please use correct command");
+                            replyMessage(chatId, "ℹ️ Please use correct command");
                             break;
                     }
                 } catch (Exception ex) {
-                    replyMessage(chatId, "Please use correct command or try again later");
+                    replyMessage(chatId, "ℹ️ Please use correct command or try again later");
                     ex.printStackTrace();
                 }
             });
@@ -83,16 +81,16 @@ public class TelegramBot implements ApplicationRunner {
     }
 
     private void replyActiveAlertList(long chatId) {
-        List<Alert> activeAlerts = alertRepository.findAllActiveAlerts(chatId);
+        List<Alert> activeAlerts = alertRepository.findAllActiveAlertsByChatId(chatId);
         if(activeAlerts.size() > 0) {
             StringBuilder sb = new StringBuilder();
-            sb.append("Active alerts:\n");
+            sb.append("\uD83C\uDFC1 Active alerts:\n");
             activeAlerts.stream().forEach(alert -> {
                 sb.append("[" + alert.getId() + "] " + alert.getTriggerCondition() + " " + formatCurrency(alert.getPrice().doubleValue()) + "\n");
             });
             replyMessage(chatId, sb.toString());
         } else {
-            replyMessage(chatId, "No active alerts");
+            replyMessage(chatId, "ℹ️ No active alerts");
         }
     }
 
@@ -101,7 +99,7 @@ public class TelegramBot implements ApplicationRunner {
                 "BTC",
                 lunoEndpointUrl
         );
-        String currentPrice = "1 BTC - " + formatCurrency(crypto.getPrice().doubleValue());
+        String currentPrice = "ℹ️ 1 BTC ≈ " + formatCurrency(crypto.getPrice().doubleValue());
         replyMessage(chatId, currentPrice);
     }
 
@@ -122,20 +120,20 @@ public class TelegramBot implements ApplicationRunner {
                     alert.setAlerted(false);
                     alert.setPrice(price);
                     alert.setChatId(chatId);
-                    alert.setTriggerCondition(priceAlertOperation);
+                    alert.setTriggerCondition(priceAlertOperation.toLowerCase());
                     alertRepository.save(alert);
 
-                    replyMessage(chatId, "New price alert saved");
+                    replyMessage(chatId, "✅ New price alert saved");
 
                 } else {
-                    replyMessage(chatId, "Similar alert already exist");
+                    replyMessage(chatId, "⚠️ Similar alert already exist");
 
                 }
             } else {
-                replyMessage(chatId, "Supported price alert operations are only `<` and `>`");
+                replyMessage(chatId, "⚠️ Supported price alert operations are only `<` and `>`");
             }
         } else {
-            replyMessage(chatId, "Please use valid price alert command (> 139500)");
+            replyMessage(chatId, "⚠️ Please use valid price alert command (> 139500)");
         }
     }
 
@@ -164,9 +162,21 @@ public class TelegramBot implements ApplicationRunner {
         return Arrays.stream(whitelistedOperation).anyMatch(s -> s.equals(priceAlertCommand));
     }
 
-    public static void replyMessage(long chatId, String message) {
+    public void replyMessage(long chatId, String message) {
         SendResponse response = bot.execute(
                 new SendMessage(chatId, message)
         );
+    }
+
+    public void sendAlert(Crypto crypto, Alert alert) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\uD83D\uDEA8 New alert:\n");
+        sb.append("Alert price " + formatCurrency(alert.getPrice().doubleValue()) + "\n");
+        sb.append(alert.getTriggerCondition() + " 1 BTC ≈ " + formatCurrency(crypto.getPrice().doubleValue()));
+
+        replyMessage(alert.getChatId(), sb.toString());
+
+        alert.setAlerted(true);
+        alertRepository.save(alert);
     }
 }
