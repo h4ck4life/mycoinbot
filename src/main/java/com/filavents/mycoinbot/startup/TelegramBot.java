@@ -59,7 +59,9 @@ public class TelegramBot implements ApplicationRunner {
                                 replyLatestBTCMYRPrice(chatId);
                                 break;
                             case CMD_ALERT:
-                                saveNewPriceAlert(userInputCommand[1], chatId);
+                                if(saveNewPriceAlert(userInputCommand[1], chatId)) {
+                                    replyActiveAlertList(chatId);
+                                }
                                 break;
                             case CMD_LIST:
                                 replyActiveAlertList(chatId);
@@ -103,7 +105,7 @@ public class TelegramBot implements ApplicationRunner {
         replyMessage(chatId, currentPrice);
     }
 
-    private void saveNewPriceAlert(String priceCommand, long chatId) {
+    private boolean saveNewPriceAlert(String priceCommand, long chatId) {
         if (null != priceCommand) {
             String[] priceArgs = extractPriceAlertCommand(priceCommand);
 
@@ -124,10 +126,10 @@ public class TelegramBot implements ApplicationRunner {
                     alertRepository.save(alert);
 
                     replyMessage(chatId, "✅ New price alert saved");
+                    return true;
 
                 } else {
                     replyMessage(chatId, "⚠️ Similar alert already exist");
-
                 }
             } else {
                 replyMessage(chatId, "⚠️ Supported price alert operations are only `<` and `>`");
@@ -135,6 +137,7 @@ public class TelegramBot implements ApplicationRunner {
         } else {
             replyMessage(chatId, "⚠️ Please use valid price alert command (> 139500)");
         }
+        return false;
     }
 
     public String formatCurrency(double price) {
