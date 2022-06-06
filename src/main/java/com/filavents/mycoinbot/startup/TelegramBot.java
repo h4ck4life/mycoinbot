@@ -34,10 +34,10 @@ public class TelegramBot implements ApplicationRunner {
 
     private com.pengrad.telegrambot.TelegramBot bot = null;
 
-    public final String CMD_PRICE = "/price";
-    public final String CMD_ALERT = "/alert";
-    public final String CMD_LIST = "/list";
-    public final String CMD_HELP = "/help";
+    public static final String CMD_PRICE = "/price";
+    public static final String CMD_ALERT = "/alert";
+    public static final String CMD_LIST = "/list";
+    public static final String CMD_HELP = "/help";
 
     @Override
     public void run(ApplicationArguments args) {
@@ -50,29 +50,31 @@ public class TelegramBot implements ApplicationRunner {
         // Register for updates
         bot.setUpdatesListener(updates -> {
             updates.forEach(update -> {
-                long chatId = update.message().chat().id();
-                try {
-                    String[] userInputCommand = extractUserCommand(update.message().text());
-                    switch (userInputCommand[0]) {
-                        case CMD_PRICE:
-                            replyLatestBTCMYRPrice(chatId);
-                            break;
-                        case CMD_ALERT:
-                            saveNewPriceAlert(userInputCommand[1], chatId);
-                            break;
-                        case CMD_LIST:
-                            replyActiveAlertList(chatId);
-                            break;
-                        case CMD_HELP:
-                            replyMessage(chatId, "ℹ️ Please contact @h4ck4life for further support. Thanks");
-                            break;
-                        default:
-                            replyMessage(chatId, "ℹ️ Please use correct command");
-                            break;
+                if (null != update.message()) {
+                    long chatId = update.message().chat().id();
+                    try {
+                        String[] userInputCommand = extractUserCommand(update.message().text());
+                        switch (userInputCommand[0]) {
+                            case CMD_PRICE:
+                                replyLatestBTCMYRPrice(chatId);
+                                break;
+                            case CMD_ALERT:
+                                saveNewPriceAlert(userInputCommand[1], chatId);
+                                break;
+                            case CMD_LIST:
+                                replyActiveAlertList(chatId);
+                                break;
+                            case CMD_HELP:
+                                replyMessage(chatId, "ℹ️ Please contact @h4ck4life for further support. Thanks");
+                                break;
+                            default:
+                                replyMessage(chatId, "ℹ️ Please use correct command");
+                                break;
+                        }
+                    } catch (Exception ex) {
+                        replyMessage(chatId, "ℹ️ Please use correct command or try again later");
+                        ex.printStackTrace();
                     }
-                } catch (Exception ex) {
-                    replyMessage(chatId, "ℹ️ Please use correct command or try again later");
-                    ex.printStackTrace();
                 }
             });
             // return id of last processed update or confirm them all
@@ -82,12 +84,10 @@ public class TelegramBot implements ApplicationRunner {
 
     private void replyActiveAlertList(long chatId) {
         List<Alert> activeAlerts = alertRepository.findAllActiveAlertsByChatId(chatId);
-        if(activeAlerts.size() > 0) {
+        if (!activeAlerts.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             sb.append("\uD83C\uDFC1 Active alerts:\n");
-            activeAlerts.stream().forEach(alert -> {
-                sb.append("[" + alert.getId() + "] " + alert.getTriggerCondition() + " " + formatCurrency(alert.getPrice().doubleValue()) + "\n");
-            });
+            activeAlerts.forEach(alert -> sb.append("[").append(alert.getId()).append("] ").append(alert.getTriggerCondition()).append(" ").append(formatCurrency(alert.getPrice().doubleValue())).append("\n"));
             replyMessage(chatId, sb.toString());
         } else {
             replyMessage(chatId, "ℹ️ No active alerts");
@@ -115,7 +115,7 @@ public class TelegramBot implements ApplicationRunner {
 
                 BigDecimal price = new BigDecimal(priceAlertAmount);
 
-                if(alertRepository.findDuplicateActiveAlerts(chatId, price, priceAlertOperation).isEmpty()) {
+                if (alertRepository.findDuplicateActiveAlerts(chatId, price, priceAlertOperation).isEmpty()) {
                     Alert alert = new Alert();
                     alert.setAlerted(false);
                     alert.setPrice(price);
@@ -146,7 +146,7 @@ public class TelegramBot implements ApplicationRunner {
         int maxArray = 3;
         String[] splitArgs = Arrays.stream(message.split(" ")).limit(maxArray).toArray(String[]::new);
 
-        if(splitArgs.length == 3) {
+        if (splitArgs.length == 3) {
             return List.of(splitArgs[0], splitArgs[1] + " " + splitArgs[2]).toArray(String[]::new);
         } else {
             return splitArgs;
@@ -159,11 +159,11 @@ public class TelegramBot implements ApplicationRunner {
 
     public boolean isWhiteListedPriceAlertCommand(String priceAlertCommand) {
         String[] whitelistedOperation = {"<", ">"};
-        return Arrays.stream(whitelistedOperation).anyMatch(s -> s.equals(priceAlertCommand));
+        return Arrays.asList(whitelistedOperation).contains(priceAlertCommand);
     }
 
     public void replyMessage(long chatId, String message) {
-        SendResponse response = bot.execute(
+        bot.execute(
                 new SendMessage(chatId, message)
         );
     }
@@ -171,7 +171,12 @@ public class TelegramBot implements ApplicationRunner {
     public void sendAlert(Crypto crypto, Alert alert) {
         StringBuilder sb = new StringBuilder();
         sb.append("\uD83D\uDEA8 New alert:\n");
-        sb.append("1 BTC ≈ " + formatCurrency(crypto.getPrice().doubleValue()) + " " + alert.getTriggerCondition() + " " + formatCurrency(alert.getPrice().doubleValue()));
+        sb.append("1 BTC ≈ ")
+                .append(formatCurrency(crypto.getPrice().doubleValue()))
+                .append(" ")
+                .append(alert.getTriggerCondition())
+                .append(" ")
+                .append(formatCurrency(alert.getPrice().doubleValue()));
 
         replyMessage(alert.getChatId(), sb.toString());
 

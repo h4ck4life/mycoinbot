@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -32,7 +33,7 @@ public class CryptoController {
     @Autowired
     private final CryptoService cryptoService = new LunoCryptoServiceImpl();
 
-    @RequestMapping(value = "/latest", method = RequestMethod.GET)
+    @GetMapping(path = "/latest")
     public ResponseEntity<Crypto> getLatestCryptoPrice() throws Exception {
         Crypto crypto = cryptoService.getLatestCryptoPrice(
                 "BTC",
@@ -41,12 +42,12 @@ public class CryptoController {
         return new ResponseEntity<>(crypto, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/alert", method = RequestMethod.GET)
+    @GetMapping(path = "/alert")
     public ResponseEntity<String> checkPriceAlert() throws Exception {
 
         List<Alert> activeAlerts = alertRepository.findAllActiveAlerts();
 
-        if(activeAlerts.isEmpty() == false) {
+        if(!activeAlerts.isEmpty()) {
 
             // Get the latest BTC price to compare with
             Crypto crypto = cryptoService.getLatestCryptoPrice(
@@ -55,7 +56,7 @@ public class CryptoController {
             );
 
             // Begin price compare here & alert
-            activeAlerts.stream().forEach(alert -> {
+            activeAlerts.forEach(alert -> {
                 switch (alert.getTriggerCondition()) {
                     case ">":
                         if(crypto.getPrice().doubleValue() > alert.getPrice().doubleValue()) {
