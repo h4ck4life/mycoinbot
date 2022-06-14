@@ -7,7 +7,6 @@ import com.filavents.mycoinbot.service.CryptoService;
 import com.filavents.mycoinbot.service.impl.LunoCryptoServiceImpl;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.response.SendResponse;
 import io.netty.util.internal.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +19,6 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 
 @Component
 public class TelegramBot implements ApplicationRunner {
