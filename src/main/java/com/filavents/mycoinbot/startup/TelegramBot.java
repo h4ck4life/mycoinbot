@@ -8,6 +8,7 @@ import com.filavents.mycoinbot.service.impl.LunoCryptoServiceImpl;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
+import io.netty.util.internal.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -19,6 +20,7 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 @Component
 public class TelegramBot implements ApplicationRunner {
@@ -60,14 +62,36 @@ public class TelegramBot implements ApplicationRunner {
                                 break;
                             case CMD_ALERT:
                                 if(saveNewPriceAlert(userInputCommand[1], chatId)) {
-                                    replyActiveAlertList(chatId);
+                                    replyActiveAlertList(userInputCommand[1], chatId);
                                 }
                                 break;
                             case CMD_LIST:
-                                replyActiveAlertList(chatId);
+                                String command = userInputCommand.length > 1 ? userInputCommand[1] : null;
+                                replyActiveAlertList(command, chatId);
                                 break;
                             case CMD_HELP:
-                                replyMessage(chatId, "ℹ️ Please contact @h4ck4life for further support. Thanks");
+                                StringBuilder helpMsg = new StringBuilder();
+                                helpMsg.append("Check current BTC price:")
+                                        .append("\n")
+                                        .append("/price")
+                                        .append("\n")
+                                        .append("\n")
+                                        .append("Save new alert:")
+                                        .append("\n")
+                                        .append("/alert > 120000")
+                                        .append("\n")
+                                        .append("/alert < 120000")
+                                        .append("\n")
+                                        .append("\n")
+                                        .append("View alert list:")
+                                        .append("\n")
+                                        .append("/list")
+                                        .append("\n")
+                                        .append("\n")
+                                        .append("Clear alert list:")
+                                        .append("\n")
+                                        .append("/list clear");
+                                replyMessage(chatId, helpMsg.toString());
                                 break;
                             default:
                                 replyMessage(chatId, "ℹ️ Please use correct command");
@@ -84,12 +108,18 @@ public class TelegramBot implements ApplicationRunner {
         });
     }
 
-    private void replyActiveAlertList(long chatId) {
+    private void replyActiveAlertList(String command, long chatId) {
+
+        if(StringUtil.isNullOrEmpty(command) == false && command.trim().equalsIgnoreCase("clear")) {
+            alertRepository.clearAllAlertsByChatId(chatId);
+        }
+
         List<Alert> activeAlerts = alertRepository.findAllActiveAlertsByChatId(chatId);
         if (!activeAlerts.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             sb.append("\uD83C\uDFC1 Active alerts:\n");
-            activeAlerts.forEach(alert -> sb.append("[").append(alert.getId()).append("] ").append(alert.getTriggerCondition()).append(" ").append(formatCurrency(alert.getPrice().doubleValue())).append("\n"));
+            //activeAlerts.forEach(alert -> sb.append("[").append(alert.getId()).append("] ").append(alert.getTriggerCondition()).append(" ").append(formatCurrency(alert.getPrice().doubleValue())).append("\n"));
+            activeAlerts.forEach(alert -> sb.append(alert.getTriggerCondition()).append(" ").append(formatCurrency(alert.getPrice().doubleValue())).append("\n"));
             replyMessage(chatId, sb.toString());
         } else {
             replyMessage(chatId, "ℹ️ No active alerts");
@@ -117,7 +147,15 @@ public class TelegramBot implements ApplicationRunner {
 
                 BigDecimal price = new BigDecimal(priceAlertAmount);
 
-                if (alertRepository.findDuplicateActiveAlerts(chatId, price, priceAlertOperation).isEmpty()) {
+                boolean noDuplicateAlerts = alertRepository.findDuplicateActiveAlerts(chatId, price, priceAlertOperation).isEmpty();
+                boolean isMaxActiveAlertList = alertRepository.findAllActiveAlertsByChatId(chatId).size() > 4;
+
+                if(isMaxActiveAlertList) {
+                    replyMessage(chatId, "⚠️ Max active alerts are limited to 5");
+                    return false;
+                }
+
+                if (noDuplicateAlerts) {
                     Alert alert = new Alert();
                     alert.setAlerted(false);
                     alert.setPrice(price);
