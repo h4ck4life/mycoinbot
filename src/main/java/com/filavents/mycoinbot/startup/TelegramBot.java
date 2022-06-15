@@ -41,7 +41,8 @@ public class TelegramBot implements ApplicationRunner {
 
     private com.pengrad.telegrambot.TelegramBot bot = null;
 
-    private final Cache<String, Double> cache;
+    public static Cache<String, Crypto> cache = null;
+    public static final String CACHE_KEY_BTCPRICE = "BTCPRICE";
 
     public static final String CMD_PRICE = "/price";
     public static final String CMD_ALERT = "/alert";
@@ -141,22 +142,21 @@ public class TelegramBot implements ApplicationRunner {
 
     private void replyLatestBTCMYRPrice(long chatId) throws Exception {
 
-        String CACHE_KEY_BTCPRICE = "BTCPRICE";
-        Double currentBTCPrice = cache.getIfPresent(CACHE_KEY_BTCPRICE);
+        Crypto currentBTCPrice = cache.getIfPresent(CACHE_KEY_BTCPRICE);
 
         if(null == currentBTCPrice) {
             logger.info("Get live price..");
             currentBTCPrice = cryptoService.getLatestCryptoPrice(
                     "BTC",
                     lunoEndpointUrl
-            ).getPrice().doubleValue();
+            );
 
             cache.put(CACHE_KEY_BTCPRICE, currentBTCPrice);
         } else {
             logger.info("Get price from cache..");
         }
 
-        String currentPrice = "ℹ️ 1 BTC ≈ " + formatCurrency(currentBTCPrice);
+        String currentPrice = "ℹ️ 1 BTC ≈ " + formatCurrency(currentBTCPrice.getPrice().doubleValue());
         replyMessage(chatId, currentPrice);
     }
 
