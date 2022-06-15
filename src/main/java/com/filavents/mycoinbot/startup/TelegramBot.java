@@ -145,7 +145,7 @@ public class TelegramBot implements ApplicationRunner {
         Crypto currentBTCPrice = cache.getIfPresent(CACHE_KEY_BTCPRICE);
 
         if(null == currentBTCPrice) {
-            logger.info("Get live price..");
+            logger.info("Get live price for user chatId: " + chatId);
             currentBTCPrice = cryptoService.getLatestCryptoPrice(
                     "BTC",
                     lunoEndpointUrl
@@ -153,7 +153,7 @@ public class TelegramBot implements ApplicationRunner {
 
             cache.put(CACHE_KEY_BTCPRICE, currentBTCPrice);
         } else {
-            logger.info("Get price from cache..");
+            logger.info("Get price from cache for user chatId: " + chatId);
         }
 
         String currentPrice = "ℹ️ 1 BTC ≈ " + formatCurrency(currentBTCPrice.getPrice().doubleValue());
