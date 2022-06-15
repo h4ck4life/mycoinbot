@@ -5,9 +5,13 @@ import com.filavents.mycoinbot.model.Crypto;
 import com.filavents.mycoinbot.model.repository.AlertRepository;
 import com.filavents.mycoinbot.service.CryptoService;
 import com.filavents.mycoinbot.service.impl.LunoCryptoServiceImpl;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.request.SendMessage;
 import io.netty.util.internal.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -19,9 +23,12 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class TelegramBot implements ApplicationRunner {
+
+    Logger logger = LoggerFactory.getLogger(TelegramBot.class);
 
     @Value("${mycoinbot.lunoEndpointUrl}")
     private String lunoEndpointUrl;
@@ -34,15 +41,24 @@ public class TelegramBot implements ApplicationRunner {
 
     private com.pengrad.telegrambot.TelegramBot bot = null;
 
+    private final Cache<String, Double> cache;
+
     public static final String CMD_PRICE = "/price";
     public static final String CMD_ALERT = "/alert";
     public static final String CMD_LIST = "/list";
     public static final String CMD_HELP = "/help";
 
+    public TelegramBot() {
+        cache = Caffeine.newBuilder()
+                .expireAfterWrite(5, TimeUnit.MINUTES)
+                .maximumSize(1)
+                .build();
+    }
+
     @Override
     public void run(ApplicationArguments args) {
 
-        System.out.println("Starting Telegram Bot...");
+        logger.info("Starting Telegram Bot...");
 
         // Create your bot passing the token received from @BotFather
         bot = new com.pengrad.telegrambot.TelegramBot(System.getenv("TELEGRAM_BOT_TOKEN"));
@@ -68,28 +84,27 @@ public class TelegramBot implements ApplicationRunner {
                                 replyActiveAlertList(command, chatId);
                                 break;
                             case CMD_HELP:
-                                StringBuilder helpMsg = new StringBuilder();
-                                helpMsg.append("Check current BTC price:")
-                                        .append("\n")
-                                        .append("/price")
-                                        .append("\n")
-                                        .append("\n")
-                                        .append("Save new alert:")
-                                        .append("\n")
-                                        .append("/alert > 120000")
-                                        .append("\n")
-                                        .append("/alert < 120000")
-                                        .append("\n")
-                                        .append("\n")
-                                        .append("View alert list:")
-                                        .append("\n")
-                                        .append("/list")
-                                        .append("\n")
-                                        .append("\n")
-                                        .append("Clear alert list:")
-                                        .append("\n")
-                                        .append("/list clear");
-                                replyMessage(chatId, helpMsg.toString());
+                                String helpMsg = "Check current BTC price:" +
+                                        "\n" +
+                                        "/price" +
+                                        "\n" +
+                                        "\n" +
+                                        "Save new alert:" +
+                                        "\n" +
+                                        "/alert > 120000" +
+                                        "\n" +
+                                        "/alert < 120000" +
+                                        "\n" +
+                                        "\n" +
+                                        "View alert list:" +
+                                        "\n" +
+                                        "/list" +
+                                        "\n" +
+                                        "\n" +
+                                        "Clear alert list:" +
+                                        "\n" +
+                                        "/list clear";
+                                replyMessage(chatId, helpMsg);
                                 break;
                             default:
                                 replyMessage(chatId, "ℹ️ Please use correct command");
@@ -108,7 +123,7 @@ public class TelegramBot implements ApplicationRunner {
 
     private void replyActiveAlertList(String command, long chatId) {
 
-        if(StringUtil.isNullOrEmpty(command) == false && command.trim().equalsIgnoreCase("clear")) {
+        if(!StringUtil.isNullOrEmpty(command) && command.trim().equalsIgnoreCase("clear")) {
             alertRepository.clearAllAlertsByChatId(chatId);
         }
 
@@ -125,11 +140,23 @@ public class TelegramBot implements ApplicationRunner {
     }
 
     private void replyLatestBTCMYRPrice(long chatId) throws Exception {
-        Crypto crypto = cryptoService.getLatestCryptoPrice(
-                "BTC",
-                lunoEndpointUrl
-        );
-        String currentPrice = "ℹ️ 1 BTC ≈ " + formatCurrency(crypto.getPrice().doubleValue());
+
+        String CACHE_KEY_BTCPRICE = "BTCPRICE";
+        Double currentBTCPrice = cache.getIfPresent(CACHE_KEY_BTCPRICE);
+
+        if(null == currentBTCPrice) {
+            logger.info("Get live price..");
+            currentBTCPrice = cryptoService.getLatestCryptoPrice(
+                    "BTC",
+                    lunoEndpointUrl
+            ).getPrice().doubleValue();
+
+            cache.put(CACHE_KEY_BTCPRICE, currentBTCPrice);
+        } else {
+            logger.info("Get price from cache..");
+        }
+
+        String currentPrice = "ℹ️ 1 BTC ≈ " + formatCurrency(currentBTCPrice);
         replyMessage(chatId, currentPrice);
     }
 
@@ -208,16 +235,15 @@ public class TelegramBot implements ApplicationRunner {
     }
 
     public void sendAlert(Crypto crypto, Alert alert) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("\uD83D\uDEA8 New alert:\n");
-        sb.append("1 BTC ≈ ")
-                .append(formatCurrency(crypto.getPrice().doubleValue()))
-                .append(" ")
-                .append(alert.getTriggerCondition())
-                .append(" ")
-                .append(formatCurrency(alert.getPrice().doubleValue()));
+        String sb = "\uD83D\uDEA8 New alert:\n" +
+                "1 BTC ≈ " +
+                formatCurrency(crypto.getPrice().doubleValue()) +
+                " " +
+                alert.getTriggerCondition() +
+                " " +
+                formatCurrency(alert.getPrice().doubleValue());
 
-        replyMessage(alert.getChatId(), sb.toString());
+        replyMessage(alert.getChatId(), sb);
 
         alert.setAlerted(true);
         alertRepository.save(alert);
