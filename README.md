@@ -11,5 +11,5 @@ https://t.me/ask_mycoin_bot
 
 ### How to run locally
 - Ensure you've created new telegram bot in botfather
-- In the terminal, set the environment variable like this `SET TELEGRAM_BOT_TOKEN=<your bot token>`
+- In the terminal, set the environment variable. Linux example, `export TELEGRAM_BOT_TOKEN=<your bot token>`
 - Then run the spring app using maven, `mvn spring-boot:run`
