@@ -2,7 +2,10 @@
 A telegram price alert bot from `BTC ≈ MYR`
 
 Read the full story here:\
-https://malifaaziz.medium.com/hosting-telegram-bot-server-in-old-android-device-9bae3773d065
+https://malifaaziz.medium.com/hosting-telegram-bot-server-in-old-android-device-9bae3773d065\
+
+Try it in Telegram:\
+https://t.me/ask_mycoin_bot
 
 <img src="https://miro.medium.com/max/1182/1*TUKRyy5jYJ858oNpQ_EEOA.jpeg" width="40%" target="_blank" />
 
