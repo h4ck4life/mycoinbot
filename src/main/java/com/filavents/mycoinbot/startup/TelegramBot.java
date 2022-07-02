@@ -150,7 +150,8 @@ public class TelegramBot implements ApplicationRunner {
                     "BTC",
                     lunoEndpointUrl
             );
-
+            logger.info("=== Luno Price ===");
+            logger.info(currentBTCPrice.toString());
             cache.put(CACHE_KEY_BTCPRICE, currentBTCPrice);
         } else {
             logger.info("Get price from cache for user chatId: " + chatId);
@@ -189,6 +190,7 @@ public class TelegramBot implements ApplicationRunner {
                     alertRepository.save(alert);
 
                     replyMessage(chatId, "✅ New price alert saved");
+
                     return true;
 
                 } else {
