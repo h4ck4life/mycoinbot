@@ -206,7 +206,8 @@ public class TelegramBot implements ApplicationRunner {
     }
 
     public String formatCurrency(double price) {
-        NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("ms", "MY"));
+        //NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("ms", "MY"));
+        NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
         return currency.format(price);
     }
 
