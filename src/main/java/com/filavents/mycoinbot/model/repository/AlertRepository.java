@@ -25,4 +25,7 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     @Modifying
     @Query("update Alert c set c.isAlerted = true where c.chatId = ?1")
     void clearAllAlertsByChatId(long id);
+
+    @Query("select count(distinct c.chatId) from Alert c")
+    int countAllUniqueUsers();
 }

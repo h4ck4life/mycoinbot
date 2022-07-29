@@ -16,7 +16,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("crypto")
@@ -84,6 +86,21 @@ public class CryptoController {
         }
 
         return new ResponseEntity<>("Total active alerts: " + activeAlerts.size(), HttpStatus.OK);
+    }
+
+    @GetMapping(path = "/stats")
+    public ResponseEntity<Map> getStatistics() {
+
+        Map<String, Object> response = new HashMap<>();
+
+        List<Alert> activeAlerts = alertRepository.findAllActiveAlerts();
+        int usersCount = alertRepository.countAllUniqueUsers();
+
+        response.put("active_alerts_count", activeAlerts.size());
+        response.put("users_count", usersCount);
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+
     }
 
 }
